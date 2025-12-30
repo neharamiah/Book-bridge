@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BMSCE BookBridge</title>
+  <style>
+   body {
+  font-family: "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+   }
+    .card {
+      background: white;
+      width: 100%;
+      max-width: 430px;
+      border-radius: 15px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      padding: 25px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #0d47a1;
+    }
+    input, select, button, textarea {
+      width: 100%;
+      margin: 8px 0;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    button {
+      background: #2196f3;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #1976d2;
+    }
+    .hidden { display: none; }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- LOGIN PAGE -->
+  <div id="login-page">
+    <h2>📚BOOKBRIDGE LOGIN</h2>
+    <input type="email" id="login-email" placeholder="Enter your @bmsce.ac.in email" required />
+    <input type="password" id="login-pass" placeholder="Enter password" required />
+    <button onclick="login()">Login</button>
+    <p style="text-align:center;">Don't have an account?</p>
+    <button onclick="show('signup-page')">Create Account</button>
+  </div>
+
+  <!-- SIGNUP PAGE -->
+  <div id="signup-page" class="hidden">
+    <h2>🔑Create Account</h2>
+    <input type="text" id="signup-username" placeholder="Enter Username" required />
+    <input type="email" id="signup-email" placeholder="Enter @bmsce.ac.in email" required />
+    <input type="password" id="signup-pass" placeholder="Create Password" required />
+    <button onclick="signup()">Sign Up</button>
+    <button onclick="show('login-page')">Back to Login</button>
+  </div>
+
+  <!-- CHOICE PAGE -->
+  <div id="choice-page" class="hidden">
+    <h2>Select Your Role</h2>
+    <div class="btn-group">
+      <button onclick="chooseRole('lender')">Lender</button>
+      <button onclick="chooseRole('borrower')">Borrower</button>
+    </div>
+  </div>
+
+  <!-- BRANCH PAGE -->
+  <div id="branch-page" class="hidden">
+    <h2>Select Branch & Semester</h2>
+    <select id="branch">
+      <option value="">Select Branch</option>
+      <option value="CSE">CSE</option>
+      <option value="ISE">ISE</option>
+      <option value="ECE">ECE</option>
+      <option value="EEE">EEE</option>
+      <option value="ME">ME</option>
+    </select>
+    <select id="sem">
+      <option value="">Select Semester</option>
+      <option value="P">P Cycle (1st Sem)</option>
+      <option value="C">C Cycle (2nd Sem)</option>
+      <option value="3">3rd Sem</option>
+      <option value="4">4th Sem</option>
+      <option value="5">5th Sem</option>
+      <option value="6">6th Sem</option>
+      <option value="7">7th Sem</option>
+      <option value="8">8th Sem</option>
+    </select>
+    <button onclick="nextStep('subject-page')">Next</button>
+  </div>
+
+  <!-- SUBJECT PAGE -->
+  <div id="subject-page" class="hidden">
+    <h2>Select Subject</h2>
+    <select id="subject">
+      <option value="">Select Subject</option>
+    </select>
+    <button onclick="nextStep('type-page')">Next</button>
+  </div>
+
+  <!-- TYPE PAGE -->
+  <div id="type-page" class="hidden">
+    <h2>Select Type</h2>
+    <div class="btn-group">
+      <button onclick="chooseType('PYQ')">PYQ</button>
+      <button onclick="chooseType('Notes')">Notes</button>
+      <button onclick="chooseType('Book')">Book</button>
+    </div>
+  </div>
+
+  <!-- LENDER PAGE -->
+  <div id="lender-page" class="hidden">
+    <h2>Upload Details</h2>
+    <label><b>Upload front page:</b></label>
+    <input type="file" id="file-upload" accept=".pdf,.jpg,.png" />
+    <div id="author-field" class="hidden">
+      <input type="text" id="author-name" placeholder="Enter Author Name" />
+    </div>
+    <div id="toc-field" class="hidden">
+      <label><b>Upload Table of Contents:</b></label>
+      <input type="file" id="toc-file" accept=".pdf,.doc,.docx,.txt" />
+    </div>
+    <input type="email" id="contact-email" placeholder="Enter your @bmsce.ac.in email (required)" required />
+    <input type="tel" id="phone" placeholder="Phone number (optional)" />
+    <button onclick="uploadFile()">Upload</button>
+    <button onclick="goToBorrower()">Go to Borrow Section</button>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <!-- BORROWER PAGE -->
+  <div id="borrower-page" class="hidden">
+  <h2>Borrower Section</h2>
+  <input id="search-book" placeholder="Search" />
+  <button onclick="findBook()">Find</button>
+  <div id="results"></div>
+  <button onclick="logout()">Logout</button>
+</div>
+
+</div>
+
+<script>
+let role = "";
+let type = "";
+
+// --- SIGNUP ---
+function signup() {
+  const username = document.getElementById("signup-username").value.trim();
+  const email = document.getElementById("signup-email").value.trim();
+  const pass = document.getElementById("signup-pass").value.trim();
+
+  if (!email.endsWith("@bmsce.ac.in")) { alert("Please use a @bmsce.ac.in email!"); return; }
+  if (!username || !pass) { alert("Please fill all fields!"); return; }
+
+  fetch("http://localhost:5000/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, email, password: pass })
+  })
+  .then(res => res.json())
+  .then(data => {
+    alert(data.message);
+    if (data.success) show("login-page");
+  })
+  .catch(err => { console.error(err); alert("Server error"); });
+}
+
+// --- LOGIN ---
+function login() {
+  const email = document.getElementById("login-email").value.trim();
+  const pass = document.getElementById("login-pass").value.trim();
+
+  fetch("http://localhost:5000/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password: pass })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (!data.success) { alert(data.message); return; }
+    alert("Login successful");
+    show("choice-page");
+  })
+  .catch(err => { console.error(err); alert("Server error"); });
+}
+
+// --- PAGE SWITCH ---
+function show(pageId) {
+  document.querySelectorAll(".card > div").forEach(div => div.classList.add("hidden"));
+  document.getElementById(pageId).classList.remove("hidden");
+}
+
+// --- ROLE SELECTION ---
+function chooseRole(selectedRole) {
+  role = selectedRole;
+  show("branch-page");
+}
+
+// --- NEXT STEP ---
+function nextStep(nextPage) {
+  if (nextPage === "subject-page") loadSubjects();
+  show(nextPage);
+}
+
+// --- TYPE SELECTION ---
+function chooseType(selectedType) {
+  type = selectedType;
+  if (role === "lender") {
+    show("lender-page");
+    document.getElementById("author-field").classList.add("hidden");
+    document.getElementById("toc-field").classList.add("hidden");
+    if (type === "Book") {
+      document.getElementById("author-field").classList.remove("hidden");
+      document.getElementById("toc-field").classList.remove("hidden");
+    } else if (type === "Notes") {
+      document.getElementById("toc-field").classList.remove("hidden");
+    }
+  } else {
+    show("borrower-page");
+  }
+}
+
+// --- SUBJECT DATA ---
+const subjectsData = { CSE: {
+      P: ["Mathematical Foundation 1", "Applied Physics", "Basic Electronics", "C Programming", "Elements of Mechanical Engg"],
+      C: ["Mathematical Foundation 2", "Applied Chemistry", "Electrical Engg Basics", "Engineering Mechanics", "Engineering Drawing"],
+      3: ["Data Structures", "Discrete Mathematics", "OOP with Java", "Computer Organization", "Digital Electronics"],
+      4: ["Algorithms", "Operating Systems", "DBMS", "Microprocessors", "Software Engineering"],
+      5: ["Computer Networks", "Automata Theory", "AI Basics", "Web Programming"],
+      6: ["Machine Learning", "IoT", "Compiler Design", "Data Analytics"],
+      7: ["Cloud Computing", "Mobile Application Dev", "Cyber Security", "Minor Project"],
+      8: ["Blockchain", "Big Data", "Major Project"]
+    },
+    ISE: {
+      P: ["Mathematical Foundation 1", "Applied Physics", "Basic Electronics", "C Programming", "Elements of Mechanical Engg"],
+      C: ["Mathematical Foundation 2", "Applied Chemistry", "Electrical Engg Basics", "Engineering Mechanics", "Engineering Drawing"],
+      3: ["Data Structures", "OOP in Java", "Discrete Mathematics", "Computer Organization"],
+      4: ["Algorithms", "Operating Systems", "DBMS", "Software Engineering"],
+      5: ["Computer Networks", "Web Technology", "Machine Learning", "AI Basics"],
+      6: ["Cloud Computing", "Data Analytics", "Cyber Security", "IoT"],
+      7: ["Software Testing", "Deep Learning", "Project Work"],
+      8: ["Internship", "Major Project"]
+    },
+ECE: {
+      P: ["Mathematical Foundation 1", "Applied Physics", "Basic Electronics", "C Programming"],
+      C: ["Mathematical Foundation 2", "Applied Chemistry", "Electrical Engg Basics", "Engineering Mechanics"],
+      3: ["Signals & Systems", "Analog Electronics", "Digital Logic Design", "Network Theory"],
+      4: ["Microprocessors", "Communication Systems", "Control Systems", "Electromagnetics"],
+      5: ["VLSI Design", "Digital Communication", "Embedded Systems", "Antennas"],
+      6: ["Wireless Communication", "DSP", "Computer Networks", "IoT Applications"],
+      7: ["Machine Learning for ECE", "Satellite Communication", "Project Work"],
+      8: ["Internship", "Major Project"]
+    },
+    EEE: {
+      P: ["Mathematical Foundation 1", "Applied Physics", "Basic Electrical Engg", "C Programming"],
+      C: ["Mathematical Foundation 2", "Applied Chemistry", "Engineering Drawing", "Engineering Mechanics"],
+      3: ["Electrical Machines 1", "Network Theory", "Control Systems", "Analog Electronics"],
+      4: ["Power Systems 1", "Microcontrollers", "Digital Electronics"],
+      5: ["Power Electronics", "Measurements & Instrumentation", "Renewable Energy"],
+      6: ["Smart Grid", "High Voltage Engg", "Embedded Systems"],
+      7: ["Industrial Automation", "Project Work 1"],
+      8: ["Internship", "Major Project"]
+    },
+    ME: {
+      P: ["Mathematical Foundation 1", "Applied Physics", "Basic Electrical Engg", "Engineering Graphics"],
+      C: ["Mathematical Foundation 2", "Applied Chemistry", "Mechanics", "Thermodynamics"],
+      3: ["Fluid Mechanics", "Kinematics", "Machine Drawing", "Manufacturing Processes"],
+      4: ["Dynamics of Machines", "Thermal Engg", "Electrical Machines", "Metrology"],
+      5: ["Heat Transfer", "Fluid Machinery", "Machine Design"],
+      6: ["Finite Element Methods", "Refrigeration & AC", "Automobile Engg"],
+      7: ["Robotics", "Advanced Manufacturing", "Project Work 1"],
+      8: ["Internship", "Major Project"]
+    }
+ };
+
+// --- LOAD SUBJECTS ---
+function loadSubjects() {
+  const branch = document.getElementById("branch").value;
+  const sem = document.getElementById("sem").value;
+  const subjectSelect = document.getElementById("subject");
+  subjectSelect.innerHTML = "<option value=''>Select Subject</option>";
+  if (branch && sem && subjectsData[branch] && subjectsData[branch][sem]) {
+    subjectsData[branch][sem].forEach(sub => {
+      const opt = document.createElement("option");
+      opt.textContent = sub;
+      opt.value = sub;
+      subjectSelect.appendChild(opt);
+    });
+  } else {
+    const opt = document.createElement("option");
+    opt.textContent = "No subjects available.";
+    subjectSelect.appendChild(opt);
+  }
+}
+
+// --- FILE UPLOAD ---
+async function uploadFile() {
+
+  // get files
+  const frontFile = document.getElementById("file-upload").files[0];
+  const tocFile = document.getElementById("toc-file")?.files[0];
+
+  // get text data
+  const email = document.getElementById("contact-email").value;
+  const phone = document.getElementById("phone").value;
+  const subject = document.getElementById("subject").value;
+  const branch = document.getElementById("branch").value;
+  const sem = document.getElementById("sem").value;
+
+  if (!frontFile) {
+    alert("Front page file is required");
+    return;
+  }
+
+  // ✅ THIS IS THE KEY PART
+  const formData = new FormData();
+  formData.append("frontFile", frontFile);   // must match multer
+  if (tocFile) formData.append("tocFile", tocFile);
+
+  formData.append("email", email);
+  formData.append("phone", phone);
+  formData.append("subject", subject);
+  formData.append("branch", branch);
+  formData.append("sem", sem);
+  formData.append("type", type);
+
+  try {
+    const response = await fetch("http://localhost:5000/api/uploads", {
+      method: "POST",
+      body: formData   // 🚨 NO headers here
+    });
+
+    const data = await response.json();
+    alert(data.message);
+
+  } catch (err) {
+    console.error(err);
+    alert("Uploading failed");
+  }
+}
+
+// --- BORROWER FUNCTIONS ---
+function goToBorrower() { role = "borrower"; show("branch-page"); }
+
+async function findBook() {
+  const branch = document.getElementById("branch").value;
+  const sem = document.getElementById("sem").value;
+  const subject = document.getElementById("subject").value;
+  const keyword = document.getElementById("search-book").value.trim().toLowerCase();
+
+  const resultDiv = document.getElementById("results");
+  resultDiv.innerHTML = "";
+
+  try {
+    const res = await fetch("http://localhost:5000/uploads");
+    const data = await res.json();
+
+    const filtered = data.filter(item =>
+      (!branch || item.branch === branch) &&
+      (!sem || item.sem === sem) &&
+      (!subject || item.subject === subject) &&
+      (!keyword || item.type.toLowerCase().includes(keyword))
+    );
+
+    if (filtered.length === 0) {
+      resultDiv.innerHTML = "<p>No matching uploads found</p>";
+      return;
+    }
+
+    filtered.forEach(item => {
+      const card = document.createElement("div");
+      card.style.border = "1px solid #ccc";
+      card.style.padding = "10px";
+      card.style.margin = "10px 0";
+      card.style.borderRadius = "8px";
+
+      card.innerHTML = `
+        <p><b>Type:</b> ${item.type}</p>
+        <p><b>Subject:</b> ${item.subject}</p>
+        ${item.author ? `<p><b>Author:</b> ${item.author}</p>` : ""}
+        <p><b>Contact:</b> ${item.email}</p>
+
+        <p><b>Front Page:</b></p>
+        <img src="http://localhost:5000/uploads/${item.frontFile}"
+             style="width:100%;max-width:200px;border:1px solid #aaa"/>
+
+        ${item.tocFile ? `
+          <p>
+            <b>Table of Contents:</b>
+            <a href="http://localhost:5000/uploads/${item.tocFile}" target="_blank">
+              View TOC
+            </a>
+          </p>` : ""}
+      `;
+
+      resultDiv.appendChild(card);
+    });
+
+  } catch (err) {
+    console.error(err);
+    resultDiv.innerHTML = "<p>Error loading data</p>";
+  }
+}
+
+// --- LOGOUT ---
+function logout() { role=""; type=""; show("login-page"); }
+
+</script>
+</body>
+</html>
