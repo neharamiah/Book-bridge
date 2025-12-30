@@ -1,7 +1,6 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const bodyParser = require("body-parser");
 const multer = require("multer");
 const path = require("path");
 require("dotenv").config();
@@ -12,18 +11,17 @@ const app = express();
    MIDDLEWARE
 ======================= */
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-// 🔧 FIX: absolute path for uploads (Render-safe)
+// static uploads (Render-safe)
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// optional static folder
+// optional public folder
 app.use(express.static(path.join(__dirname, "public")));
 
 /* =======================
    MONGODB CONNECTION
 ======================= */
-// 🔧 FIX: standard env variable name
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected"))
@@ -75,25 +73,52 @@ const Upload = mongoose.model("Upload", UploadSchema);
 
 // Signup
 app.post("/signup", async (req, res) => {
-  const { username, email, password } = req.body;
+  try {
+    const { username, email, password } = req.body;
 
-  const exists = await User.findOne({ email });
-  if (exists)
-    return res.json({ success: false, message: "User exists" });
+    // validate input
+    if (!username || !email || !password) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing fields" });
+    }
 
-  await new User({ username, email, password }).save();
-  res.json({ success: true, message: "Signup successful" });
+    const exists = await User.findOne({ email });
+    if (exists) {
+      return res.json({ success: false, message: "User exists" });
+    }
+
+    await new User({ username, email, password }).save();
+    res.json({ success: true, message: "Signup successful" });
+
+  } catch (err) {
+    console.error("Signup error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 });
 
 // Login
 app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-  const user = await User.findOne({ email, password });
-  if (!user)
-    return res.json({ success: false, message: "Invalid login" });
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing fields" });
+    }
 
-  res.json({ success: true, user });
+    const user = await User.findOne({ email, password });
+    if (!user) {
+      return res.json({ success: false, message: "Invalid login" });
+    }
+
+    res.json({ success: true, user });
+
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 });
 
 // Upload (Lender)
@@ -128,17 +153,23 @@ app.post(
 
       await newUpload.save();
       res.json({ success: true, message: "Upload successful 🎉" });
+
     } catch (err) {
-      console.error(err);
+      console.error("Upload error:", err);
       res.status(500).json({ success: false, message: "Upload failed" });
     }
   }
 );
 
 // Fetch uploads (Borrower)
-app.get("/uploads", async (req, res) => {
-  const data = await Upload.find();
-  res.json(data);
+app.get("/api/uploads", async (req, res) => {
+  try {
+    const data = await Upload.find();
+    res.json(data);
+  } catch (err) {
+    console.error("Fetch uploads error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 });
 
 /* =======================
