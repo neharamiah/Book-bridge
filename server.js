@@ -11,12 +11,10 @@ const app = express();
    MIDDLEWARE
 ======================= */
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // REQUIRED for req.body
 
-// static uploads (Render-safe)
+// Static folders
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-// optional public folder
 app.use(express.static(path.join(__dirname, "public")));
 
 /* =======================
@@ -42,7 +40,7 @@ const upload = multer({
 });
 
 /* =======================
-   SCHEMAS
+   SCHEMAS & MODELS
 ======================= */
 const UserSchema = new mongoose.Schema({
   username: String,
@@ -71,12 +69,13 @@ const Upload = mongoose.model("Upload", UploadSchema);
    ROUTES
 ======================= */
 
-// Signup
-app.post("/signup", async (req, res) => {
+// ✅ SIGNUP
+app.post("/api/signup", async (req, res) => {
   try {
+    console.log("Signup body:", req.body);
+
     const { username, email, password } = req.body;
 
-    // validate input
     if (!username || !email || !password) {
       return res
         .status(400)
@@ -85,10 +84,11 @@ app.post("/signup", async (req, res) => {
 
     const exists = await User.findOne({ email });
     if (exists) {
-      return res.json({ success: false, message: "User exists" });
+      return res.json({ success: false, message: "User already exists" });
     }
 
     await new User({ username, email, password }).save();
+
     res.json({ success: true, message: "Signup successful" });
 
   } catch (err) {
@@ -97,9 +97,11 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-// Login
-app.post("/login", async (req, res) => {
+// ✅ LOGIN
+app.post("/api/login", async (req, res) => {
   try {
+    console.log("Login body:", req.body);
+
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -121,7 +123,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// Upload (Lender)
+// ✅ UPLOAD (LENDER)
 app.post(
   "/api/uploads",
   upload.fields([
@@ -152,6 +154,7 @@ app.post(
       });
 
       await newUpload.save();
+
       res.json({ success: true, message: "Upload successful 🎉" });
 
     } catch (err) {
@@ -161,7 +164,7 @@ app.post(
   }
 );
 
-// Fetch uploads (Borrower)
+// ✅ FETCH UPLOADS (BORROWER)
 app.get("/api/uploads", async (req, res) => {
   try {
     const data = await Upload.find();
@@ -176,6 +179,6 @@ app.get("/api/uploads", async (req, res) => {
    SERVER START
 ======================= */
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`Server running on port ${PORT}`)
-);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
